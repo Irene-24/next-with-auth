@@ -72,7 +72,7 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
             routeWithToken(router, setShouldRender);
           } catch (error) {
             const path =
-              router.asPath === "/" ? "/" : `/?callbackUrl=${router.asPath}`;
+              router.pathname === "/" ? "/" : `/?callbackUrl=${router.asPath}`;
 
             router.push(path);
             return;
