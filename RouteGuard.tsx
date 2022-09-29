@@ -41,7 +41,7 @@ const routeWithToken = (router: NextRouter, setRender: Function) => {
 
 const RouteGuard = ({ children }: { children: ReactNode }) => {
   const [shouldRender, setShouldRender] = useState(false);
-  const dataFetchedRef = useRef(false);
+  const hasRefreshedRef = useRef(false);
   const user = useAppSelector(selectCurrentAuth);
 
   const [refresh] = useRefreshMutation();
@@ -49,7 +49,10 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    if (dataFetchedRef.current) return;
+    //don't run twice on mount
+    if (hasRefreshedRef.current) {
+      return;
+    }
     if (checkIsProtected(router)) {
       if (
         (checkIsAuth(router) && user.authStatus === Status.rejected) ||
@@ -68,7 +71,7 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
         routeWithToken(router, setShouldRender);
       } else {
         (async () => {
-          dataFetchedRef.current = true;
+          hasRefreshedRef.current = true;
           try {
             await refresh().unwrap();
 
@@ -86,6 +89,17 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
       setShouldRender(true);
     }
   }, [router, user, refresh]);
+
+  useEffect(() => {
+    if (user.token) {
+      setShouldRender((shouldRender) => {
+        if (!shouldRender && user.token && !checkIsAuth(router)) {
+          return true;
+        }
+        return shouldRender;
+      });
+    }
+  }, [user, router]);
 
   if (!shouldRender) {
     return <>Loading...</>;
