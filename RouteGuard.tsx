@@ -1,4 +1,4 @@
-import React, { ReactNode, useState, useEffect } from "react";
+import React, { ReactNode, useState, useEffect, useRef } from "react";
 import { useRouter, NextRouter } from "next/router";
 import { useAppSelector } from "./redux/hooks";
 import { selectCurrentAuth, Status } from "./redux/slices/auth.slice";
@@ -8,6 +8,7 @@ const checkIsProtected = (router: NextRouter) => {
   const guarded = ["/admin", "/dashboard"];
   const auth = ["/"];
   const path = router.pathname;
+
   if (guarded.includes(path) || auth.includes(path)) {
     return true;
   }
@@ -40,7 +41,7 @@ const routeWithToken = (router: NextRouter, setRender: Function) => {
 
 const RouteGuard = ({ children }: { children: ReactNode }) => {
   const [shouldRender, setShouldRender] = useState(false);
-
+  const dataFetchedRef = useRef(false);
   const user = useAppSelector(selectCurrentAuth);
 
   const [refresh] = useRefreshMutation();
@@ -48,6 +49,7 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
+    if (dataFetchedRef.current) return;
     if (checkIsProtected(router)) {
       if (
         (checkIsAuth(router) && user.authStatus === Status.rejected) ||
@@ -66,6 +68,7 @@ const RouteGuard = ({ children }: { children: ReactNode }) => {
         routeWithToken(router, setShouldRender);
       } else {
         (async () => {
+          dataFetchedRef.current = true;
           try {
             await refresh().unwrap();
 
